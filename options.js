@@ -15,6 +15,7 @@ function update_storage_space_used() {
 		}
 
 		document.querySelector('#storage_space_used').innerHTML = parseFloat((bytesUsed / Math.pow(1024, 1)).toFixed(2));
+		document.querySelector('#delete').disabled = bytesUsed === 0;
 	});
 }
 
@@ -39,8 +40,6 @@ document.querySelector('#save').addEventListener('click', () => {
 });
 
 document.querySelector('#delete').addEventListener('click', () => {
-	// document.querySelector('#delete').style.display = 'none';
-
 	browser.storage.local.clear().then(() => {
 		update_storage_space_used();
 
@@ -48,7 +47,6 @@ document.querySelector('#delete').addEventListener('click', () => {
 
 		setTimeout(() => {
 			document.querySelector('#deleted').style.display = 'none';
-			// document.querySelector('#delete').style.display = 'inline-block';
 		}, 2000);
 	});
 });
@@ -56,6 +54,6 @@ document.querySelector('#delete').addEventListener('click', () => {
 browser.extension.isAllowedIncognitoAccess().then((private) => {
 	if (!private) {
 		document.querySelector('#save').disabled = true;
-		document.querySelector('#warning').style.display = 'block';
+		document.querySelector('#warning').style.display = 'inline-block';
 	}
 });
