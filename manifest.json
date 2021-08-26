@@ -1,0 +1,30 @@
+{
+	"manifest_version": 2,
+	"name": "Save private window cookies",
+	"description": "Save the cookies in private windows and restore them when a new private window is opened.",
+	"version": "1.0.0",
+	"homepage_url": "https://github.com/Adam777Z/Save-private-window-cookies-WebExtension",
+	"developer": {
+		"name": "Adam777"
+	},
+	"browser_specific_settings": {
+		"gecko": {
+			"id": "save-private-window-cookies@Adam777",
+			"strict_min_version": "57.0"
+		}
+	},
+	"background": {
+		"scripts": [
+			"background.js"
+		]
+	},
+	"options_ui": {
+		"page": "options.html",
+		"browser_style": true
+	},
+	"permissions": [
+		"storage",
+		"cookies",
+		"<all_urls>"
+	]
+}
