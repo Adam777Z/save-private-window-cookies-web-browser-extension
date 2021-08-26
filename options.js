@@ -42,12 +42,6 @@ document.querySelector('#save').addEventListener('click', () => {
 document.querySelector('#delete').addEventListener('click', () => {
 	browser.storage.local.clear().then(() => {
 		update_storage_space_used();
-
-		document.querySelector('#deleted').style.display = 'inline-block';
-
-		setTimeout(() => {
-			document.querySelector('#deleted').style.display = 'none';
-		}, 2000);
 	});
 });
 
