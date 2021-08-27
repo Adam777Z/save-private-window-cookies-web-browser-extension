@@ -5,16 +5,17 @@
 </head>
 <body>
 	<form>
+		<p id="warning" style="display: none;">Enable the extension in private windows for this to work.</p>
 		<p>
 			<button type="button" id="save">Save cookies from private windows</button>
-			<span id="warning" style="display: none;">Enable the extension in private windows for this to work.</span>
+		</p>
+		<p>
+			<label><input type="checkbox" id="auto_save"> Save automatically</label>
 		</p>
 		<p>
 			<button type="button" id="delete">Delete stored cookies</button>
 		</p>
-		<p>
-			<span>Storage space used: <span id="storage_space_used">0</span> KB</span>
-		</p>
+		<p>Storage space used: <span id="storage_space_used">0</span> KB</p>
 	</form>
 	<script src="options.js"></script>
 </body>
