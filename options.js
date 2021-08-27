@@ -92,13 +92,11 @@ browser.extension.isAllowedIncognitoAccess().then((private) => {
 });
 
 browser.windows.onCreated.addListener((window) => {
-	if (window.incognito) {
-		browser.extension.isAllowedIncognitoAccess().then((private) => {
-			if (private) {
-				update_save_button();
-			}
-		});
-	}
+	browser.extension.isAllowedIncognitoAccess().then((private) => {
+		if (private && window['incognito']) {
+			update_save_button();
+		}
+	});
 });
 
 browser.windows.onRemoved.addListener(() => {
