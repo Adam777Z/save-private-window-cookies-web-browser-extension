@@ -1,4 +1,4 @@
-# Save private window cookies WebExtension
+# Save private window cookies web browser extension
 
 Save the cookies in private windows and restore them when a new private window is opened.
 
