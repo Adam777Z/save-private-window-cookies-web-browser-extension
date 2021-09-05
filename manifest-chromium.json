@@ -5,12 +5,6 @@
 	"version": "1.0.0",
 	"homepage_url": "https://github.com/Adam777Z/Save-private-window-cookies-web-browser-extension",
 	"author": "Adam777",
-	"browser_specific_settings": {
-		"gecko": {
-			"id": "save-private-window-cookies@Adam777",
-			"strict_min_version": "57.0"
-		}
-	},
 	"background": {
 		"scripts": [
 			"browser-polyfill.min.js",
