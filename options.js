@@ -1,3 +1,6 @@
+var isFirefox = navigator.userAgent.indexOf('Firefox') !== -1;
+var cookie_store = isFirefox ? 'firefox-private' : '1';
+
 function update_save_button() {
 	browser.storage.local.get('auto_save').then((res) => {
 		if (res.auto_save) {
@@ -55,7 +58,7 @@ document.querySelector('#save').addEventListener('click', () => {
 	browser.windows.getAll().then((windowInfoArray) => {
 		for (let windowInfo of windowInfoArray) {
 			if (windowInfo['incognito']) {
-				browser.cookies.getAll({ 'storeId': 'firefox-private' }).then((cookies) => {
+				browser.cookies.getAll({ 'storeId': cookie_store }).then((cookies) => {
 					browser.storage.local.set({ 'cookies': cookies });
 
 					update_storage_space_used();

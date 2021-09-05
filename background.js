@@ -1,3 +1,6 @@
+var isFirefox = navigator.userAgent.indexOf('Firefox') !== -1;
+var cookie_store = isFirefox ? 'firefox-private' : '1';
+
 async function is_private_window_open() {
 	let private_window_open = false;
 
@@ -14,8 +17,8 @@ async function is_private_window_open() {
 }
 
 async function save_cookies(changeInfo) {
-	if (await is_private_window_open() && changeInfo.cookie['storeId'] == 'firefox-private') {
-		browser.cookies.getAll({ 'storeId': 'firefox-private' }).then((cookies) => {
+	if (await is_private_window_open() && changeInfo.cookie['storeId'] == cookie_store) {
+		browser.cookies.getAll({ 'storeId': cookie_store }).then((cookies) => {
 			browser.storage.local.set({ 'cookies': cookies });
 		});
 	}
