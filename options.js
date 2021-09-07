@@ -24,7 +24,7 @@ function update_save_button() {
 
 function update_storage_space_used() {
 	// browser.storage.local.getBytesInUse().then((bytesUsed) => {
-	// 	document.querySelector('#storage_space_used').innerHTML = parseFloat((bytesUsed / Math.pow(1024, 1)).toFixed(2));
+	// 	document.querySelector('#storage_space_used').textContent = parseFloat((bytesUsed / Math.pow(1024, 1)).toFixed(2));
 	// });
 
 	let bytesUsed = 0;
@@ -38,7 +38,7 @@ function update_storage_space_used() {
 			).length;
 		}
 
-		document.querySelector('#storage_space_used').innerHTML = parseFloat((bytesUsed / Math.pow(1024, 1)).toFixed(2));
+		document.querySelector('#storage_space_used').textContent = parseFloat((bytesUsed / Math.pow(1024, 1)).toFixed(2));
 		document.querySelector('#delete').disabled = bytesUsed === 0;
 	});
 }
