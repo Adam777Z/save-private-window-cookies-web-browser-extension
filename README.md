@@ -14,3 +14,6 @@ How to use:
 This is a simple extension.\
 Cookies are stored locally.\
 No data is collected.
+
+## Credits
+- Icon from [Bootstrap Icons](https://icons.getbootstrap.com/) v1.5.0 (box-arrow-in-down)
