@@ -3,7 +3,7 @@
 	"name": "Save private window cookies",
 	"description": "Save the cookies in private windows and restore them when a new private window is opened.",
 	"version": "1.0.0",
-	"homepage_url": "https://github.com/Adam777Z/Save-private-window-cookies-web-browser-extension",
+	"homepage_url": "https://github.com/Adam777Z/save-private-window-cookies-web-browser-extension",
 	"author": "Adam777",
 	"icons": {
 		"16": "icons/icon-16x16.png",
