@@ -1,5 +1,6 @@
 var isFirefox = navigator.userAgent.indexOf('Firefox') !== -1;
 var cookie_store = isFirefox ? 'firefox-private' : '1';
+var was_private_window_open = false;
 
 async function is_private_window_open() {
 	let private_window_open = false;
@@ -56,7 +57,7 @@ browser.storage.onChanged.addListener((changes) => {
 
 browser.windows.onCreated.addListener((window) => {
 	browser.extension.isAllowedIncognitoAccess().then((private) => {
-		if (private && window['incognito']) {
+		if (private && window['incognito'] && !was_private_window_open) {
 			browser.storage.local.get('cookies').then((res) => {
 				if (res.cookies) {
 					// Restore cookies
@@ -70,13 +71,18 @@ browser.windows.onCreated.addListener((window) => {
 				}
 
 				save_cookies_listener();
+				was_private_window_open = true;
 			});
 		}
 	});
 });
 
 browser.windows.onRemoved.addListener(async () => {
-	if (!await is_private_window_open() && browser.cookies.onChanged.hasListener(save_cookies)) {
-		browser.cookies.onChanged.removeListener(save_cookies);
+	if (!await is_private_window_open()) {
+		if (browser.cookies.onChanged.hasListener(save_cookies)) {
+			browser.cookies.onChanged.removeListener(save_cookies);
+		}
+
+		was_private_window_open = false;
 	}
 });
