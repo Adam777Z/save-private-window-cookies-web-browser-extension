@@ -3,7 +3,7 @@ var cookie_store = isFirefox ? 'firefox-private' : '1';
 
 function update_save_button() {
 	browser.storage.local.get('auto_save').then((res) => {
-		if (res.auto_save) {
+		if (res['auto_save']) {
 			document.querySelector('#save').disabled = true;
 		} else {
 			browser.windows.getAll().then((windowInfoArray) => {
@@ -30,9 +30,9 @@ function update_storage_space_used() {
 	let bytesUsed = 0;
 
 	browser.storage.local.get('cookies').then((res) => {
-		if (res.cookies) {
+		if (res['cookies']) {
 			bytesUsed = new TextEncoder().encode(
-				Object.entries(res.cookies)
+				Object.entries(res['cookies'])
 					.map(([key, value]) => key + JSON.stringify(value))
 					.join('')
 			).length;
@@ -40,6 +40,7 @@ function update_storage_space_used() {
 
 		document.querySelector('#storage_space_used').textContent = parseFloat((bytesUsed / Math.pow(1024, 1)).toFixed(2));
 		document.querySelector('#delete').disabled = bytesUsed === 0;
+		document.querySelector('#backup').disabled = bytesUsed === 0;
 	});
 }
 
@@ -47,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
 	browser.storage.local.get({
 		'auto_save': false
 	}).then((res) => {
-		document.querySelector('#auto_save').checked = res.auto_save;
+		document.querySelector('#auto_save').checked = res['auto_save'];
 	});
 
 	update_save_button();
@@ -112,4 +113,47 @@ browser.storage.onChanged.addListener((changes) => {
 	} else if (changes['cookies']) {
 		update_storage_space_used();
 	}
+});
+
+document.querySelector('#backup').addEventListener('click', () => {
+	browser.storage.local.get('cookies').then((res) => {
+		if (res['cookies']) {
+			let objectURL = URL.createObjectURL(new Blob([JSON.stringify(res['cookies'])], { 'type': 'application/json' }));
+
+			browser.downloads.download({
+				'url': objectURL,
+				'filename': 'cookies.json',
+				'saveAs': true
+			}).then((id) => {
+				if (isFirefox) {
+					browser.downloads.erase({ 'id': id }); // Firefox only
+				}
+			}).finally(() => {
+				URL.revokeObjectURL(objectURL);
+			});
+		}
+	});
+});
+
+var file_input = document.querySelector('#file_input');
+
+file_input.addEventListener('change', () => {
+	let file = file_input.files[0];
+
+	if (file.size === 0) {
+		return;
+	}
+
+	let reader = new FileReader();
+
+	reader.addEventListener('load', () => {
+		browser.storage.local.set({ 'cookies': JSON.parse(reader.result) });
+		file_input.value = '';
+	});
+
+	reader.readAsText(file, 'utf-8');
+});
+
+document.querySelector('#restore').addEventListener('click', () => {
+	file_input.click();
 });

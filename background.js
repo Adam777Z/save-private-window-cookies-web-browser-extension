@@ -28,7 +28,7 @@ async function save_cookies(changeInfo) {
 async function save_cookies_listener() {
 	if (await is_private_window_open()) {
 		browser.storage.local.get('auto_save').then((res) => {
-			if (res.auto_save) {
+			if (res['auto_save']) {
 				if (!browser.cookies.onChanged.hasListener(save_cookies)) {
 					browser.cookies.onChanged.addListener(save_cookies);
 				}
@@ -59,9 +59,9 @@ browser.windows.onCreated.addListener((window) => {
 	browser.extension.isAllowedIncognitoAccess().then((private) => {
 		if (private && window['incognito'] && !was_private_window_open) {
 			browser.storage.local.get('cookies').then((res) => {
-				if (res.cookies) {
+				if (res['cookies']) {
 					// Restore cookies
-					res.cookies.forEach((cookie) => {
+					res['cookies'].forEach((cookie) => {
 						cookie['url'] = (cookie['secure'] ? 'https://' : 'http://') + (cookie['domain'].charAt(0) == '.' ? cookie['domain'].substr(1) : cookie['domain']) + cookie['path']; // Required to set the cookie
 						delete cookie['hostOnly']; // Not supported
 						delete cookie['session']; // Not supported
