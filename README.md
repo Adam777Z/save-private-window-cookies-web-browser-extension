@@ -16,7 +16,7 @@ Cookies are stored locally.\
 No data is collected.
 
 ## Install
-- [Firefox](https://addons.mozilla.org/en-US/firefox/addon/save-private-window-cookies/)
+- [Mozilla Firefox](https://addons.mozilla.org/en-US/firefox/addon/save-private-window-cookies/)
 
 ## Credits
 - Icon from [Bootstrap Icons](https://icons.getbootstrap.com/) v1.5.0 (box-arrow-in-down)
