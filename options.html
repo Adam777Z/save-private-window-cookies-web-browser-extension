@@ -4,7 +4,7 @@
 	<meta charset="utf-8">
 </head>
 <body>
-	<form accept-charset="utf-8">
+	<form>
 		<p id="warning" style="display: none;">Enable the extension in private windows for this to work.</p>
 		<p>
 			<button type="button" id="save">Save cookies from private windows</button>
@@ -15,12 +15,11 @@
 		<p>
 			<button type="button" id="delete">Delete stored cookies</button>
 		</p>
-		<p>Storage space used: <span id="storage_space_used">0</span> KB</p>
 		<p>
-			<button type="button" id="backup">Backup</button>
-			<button type="button" id="restore">Restore</button>
+			<button type="button" id="backup">Backup</button><button type="button" id="restore" style="margin-left: 12px;">Restore</button>
 			<input type="file" accept=".json" id="file_input" style="display: none;">
 		</p>
+		<p>Storage space used: <span id="storage_space_used">0</span> KB</p>
 	</form>
 	<script src="browser-polyfill.min.js"></script>
 	<script src="options.js"></script>

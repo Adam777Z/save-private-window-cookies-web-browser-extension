@@ -41,6 +41,35 @@ async function save_cookies_listener() {
 	}
 }
 
+function restore_cookies() {
+	browser.storage.local.get('cookies').then((res) => {
+		if (res['cookies']) {
+			for (let cookie of res['cookies']) {
+				cookie['url'] = (cookie['secure'] ? 'https://' : 'http://') + (cookie['domain'].charAt(0) == '.' ? cookie['domain'].substr(1) : cookie['domain']) + cookie['path']; // Required to set the cookie
+				delete cookie['hostOnly']; // Not supported
+				delete cookie['session']; // Not supported
+
+				browser.cookies.set(cookie);
+			}
+		}
+	});
+}
+
+async function clear_private_cookies() {
+	let hadListener = false;
+
+	if (browser.cookies.onChanged.hasListener(save_cookies)) {
+		browser.cookies.onChanged.removeListener(save_cookies);
+		hadListener = true;
+	}
+
+	await browser.browsingData.removeCookies({ 'cookieStoreId': cookie_store }).then(() => {
+		if (hadListener) {
+			browser.cookies.onChanged.addListener(save_cookies);
+		}
+	});
+}
+
 browser.runtime.onInstalled.addListener(() => {
 	browser.storage.local.get({
 		'auto_save': false
@@ -58,21 +87,9 @@ browser.storage.onChanged.addListener((changes) => {
 browser.windows.onCreated.addListener((window) => {
 	browser.extension.isAllowedIncognitoAccess().then((private) => {
 		if (private && window['incognito'] && !was_private_window_open) {
-			browser.storage.local.get('cookies').then((res) => {
-				if (res['cookies']) {
-					// Restore cookies
-					res['cookies'].forEach((cookie) => {
-						cookie['url'] = (cookie['secure'] ? 'https://' : 'http://') + (cookie['domain'].charAt(0) == '.' ? cookie['domain'].substr(1) : cookie['domain']) + cookie['path']; // Required to set the cookie
-						delete cookie['hostOnly']; // Not supported
-						delete cookie['session']; // Not supported
-
-						browser.cookies.set(cookie);
-					});
-				}
-
-				save_cookies_listener();
-				was_private_window_open = true;
-			});
+			restore_cookies();
+			save_cookies_listener();
+			was_private_window_open = true;
 		}
 	});
 });

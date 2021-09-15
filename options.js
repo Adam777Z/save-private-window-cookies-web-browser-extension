@@ -1,5 +1,11 @@
 var isFirefox = navigator.userAgent.indexOf('Firefox') !== -1;
 var cookie_store = isFirefox ? 'firefox-private' : '1';
+var file_input = document.querySelector('#file_input');
+var background_page, objectURL, downloadID;
+
+browser.runtime.getBackgroundPage().then((page) => {
+	background_page = page;
+});
 
 function update_save_button() {
 	browser.storage.local.get('auto_save').then((res) => {
@@ -82,8 +88,12 @@ document.querySelector('#auto_save').addEventListener('change', (event) => {
 });
 
 document.querySelector('#delete').addEventListener('click', () => {
-	browser.storage.local.remove('cookies').then(() => {
+	browser.storage.local.remove('cookies').then(async () => {
 		update_storage_space_used();
+
+		if (await background_page.is_private_window_open()) {
+			background_page.clear_private_cookies();
+		}
 	});
 });
 
@@ -118,24 +128,28 @@ browser.storage.onChanged.addListener((changes) => {
 document.querySelector('#backup').addEventListener('click', () => {
 	browser.storage.local.get('cookies').then((res) => {
 		if (res['cookies']) {
-			let objectURL = URL.createObjectURL(new Blob([JSON.stringify(res['cookies'])], { 'type': 'application/json' }));
+			objectURL = URL.createObjectURL(new Blob([JSON.stringify(res['cookies'])], { 'type': 'application/json' }));
 
 			browser.downloads.download({
 				'url': objectURL,
 				'filename': 'cookies.json',
 				'saveAs': true
 			}).then((id) => {
-				if (isFirefox) {
-					browser.downloads.erase({ 'id': id }); // Firefox only
-				}
-			}).finally(() => {
-				URL.revokeObjectURL(objectURL);
+				downloadID = id;
 			});
 		}
 	});
 });
 
-var file_input = document.querySelector('#file_input');
+browser.downloads.onChanged.addListener((download) => {
+	if (download['id'] == downloadID && download['state'] && download['state']['current'] != 'in_progress') {
+		browser.downloads.erase({ 'id': download['id'] }); // Remove the backup file from Downloads
+		downloadID = undefined;
+
+		URL.revokeObjectURL(objectURL);
+		objectURL = undefined;
+	}
+});
 
 file_input.addEventListener('change', () => {
 	let file = file_input.files[0];
@@ -144,14 +158,44 @@ file_input.addEventListener('change', () => {
 		return;
 	}
 
-	let reader = new FileReader();
+	new Blob([file], { 'type': 'application/json' }).text().then(async (text) => {
+		let cookies = JSON.parse(text);
 
-	reader.addEventListener('load', () => {
-		browser.storage.local.set({ 'cookies': JSON.parse(reader.result) });
+		// Convert cookies if needed
+		for (let cookie of cookies) {
+			// Change cookie store if needed
+			if (cookie['storeId'] == (isFirefox ? '1' : 'firefox-private')) {
+				cookie['storeId'] = cookie_store;
+			}
+
+			if (isFirefox) {
+				if (cookie['sameSite'] == 'unspecified') { // Chromium only
+					cookie['sameSite'] = 'no_restriction';
+				}
+
+				if (cookie['firstPartyDomain'] === undefined) {
+					cookie['firstPartyDomain'] = ''; // Firefox only
+				}
+			} else {
+				// Chromium only, if sameSite=no_restriction then secure=true is required
+				if (!cookie['secure'] && cookie['sameSite'] == 'no_restriction') {
+					cookie['sameSite'] = 'unspecified';
+				}
+
+				if (cookie['firstPartyDomain'] !== undefined) {
+					delete cookie['firstPartyDomain']; // Firefox only
+				}
+			}
+		}
+
+		browser.storage.local.set({ 'cookies': cookies });
 		file_input.value = '';
-	});
 
-	reader.readAsText(file, 'utf-8');
+		if (await background_page.is_private_window_open()) {
+			await background_page.clear_private_cookies();
+			background_page.restore_cookies();
+		}
+	});
 });
 
 document.querySelector('#restore').addEventListener('click', () => {
