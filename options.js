@@ -1,5 +1,3 @@
-var isFirefox = navigator.userAgent.indexOf('Firefox') !== -1;
-var cookie_store = isFirefox ? 'firefox-private' : '1';
 var file_input = document.querySelector('#file_input');
 var background_page, objectURL, downloadID;
 
@@ -61,11 +59,39 @@ document.addEventListener('DOMContentLoaded', () => {
 	update_storage_space_used();
 });
 
+browser.extension.isAllowedIncognitoAccess().then((private) => {
+	if (!private) {
+		document.querySelector('#warning').style.display = 'block';
+		document.querySelector('#save').disabled = true;
+		document.querySelector('#auto_save').disabled = true;
+	}
+});
+
+browser.storage.onChanged.addListener((changes) => {
+	if (changes['auto_save']) {
+		update_save_button();
+	} else if (changes['cookies']) {
+		update_storage_space_used();
+	}
+});
+
+browser.windows.onCreated.addListener((window) => {
+	browser.extension.isAllowedIncognitoAccess().then((private) => {
+		if (private && window['incognito']) {
+			update_save_button();
+		}
+	});
+});
+
+browser.windows.onRemoved.addListener(() => {
+	update_save_button();
+});
+
 document.querySelector('#save').addEventListener('click', () => {
 	browser.windows.getAll().then((windowInfoArray) => {
 		for (let windowInfo of windowInfoArray) {
 			if (windowInfo['incognito']) {
-				browser.cookies.getAll({ 'storeId': cookie_store }).then((cookies) => {
+				browser.cookies.getAll({ 'storeId': background_page.cookie_store }).then((cookies) => {
 					browser.storage.local.set({ 'cookies': cookies });
 
 					update_storage_space_used();
@@ -97,31 +123,13 @@ document.querySelector('#delete').addEventListener('click', () => {
 	});
 });
 
-browser.extension.isAllowedIncognitoAccess().then((private) => {
-	if (!private) {
-		document.querySelector('#warning').style.display = 'block';
-		document.querySelector('#save').disabled = true;
-		document.querySelector('#auto_save').disabled = true;
-	}
-});
+browser.downloads.onChanged.addListener((download) => {
+	if (download['id'] == downloadID && download['state'] && download['state']['current'] != 'in_progress') {
+		browser.downloads.erase({ 'id': download['id'] }); // Remove the backup file from Downloads
+		downloadID = undefined;
 
-browser.windows.onCreated.addListener((window) => {
-	browser.extension.isAllowedIncognitoAccess().then((private) => {
-		if (private && window['incognito']) {
-			update_save_button();
-		}
-	});
-});
-
-browser.windows.onRemoved.addListener(() => {
-	update_save_button();
-});
-
-browser.storage.onChanged.addListener((changes) => {
-	if (changes['auto_save']) {
-		update_save_button();
-	} else if (changes['cookies']) {
-		update_storage_space_used();
+		URL.revokeObjectURL(objectURL);
+		objectURL = undefined;
 	}
 });
 
@@ -141,16 +149,6 @@ document.querySelector('#backup').addEventListener('click', () => {
 	});
 });
 
-browser.downloads.onChanged.addListener((download) => {
-	if (download['id'] == downloadID && download['state'] && download['state']['current'] != 'in_progress') {
-		browser.downloads.erase({ 'id': download['id'] }); // Remove the backup file from Downloads
-		downloadID = undefined;
-
-		URL.revokeObjectURL(objectURL);
-		objectURL = undefined;
-	}
-});
-
 file_input.addEventListener('change', () => {
 	let file = file_input.files[0];
 
@@ -164,11 +162,11 @@ file_input.addEventListener('change', () => {
 		// Convert cookies if needed
 		for (let cookie of cookies) {
 			// Change cookie store if needed
-			if (cookie['storeId'] == (isFirefox ? '1' : 'firefox-private')) {
-				cookie['storeId'] = cookie_store;
+			if (cookie['storeId'] == (background_page.isFirefox ? '1' : 'firefox-private')) {
+				cookie['storeId'] = background_page.cookie_store;
 			}
 
-			if (isFirefox) {
+			if (background_page.isFirefox) {
 				if (cookie['sameSite'] == 'unspecified') { // Chromium only
 					cookie['sameSite'] = 'no_restriction';
 				}

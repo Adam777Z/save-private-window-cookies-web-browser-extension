@@ -32,8 +32,8 @@
 	"permissions": [
 		"storage",
 		"cookies",
+		"<all_urls>",
 		"downloads",
-		"browsingData",
-		"<all_urls>"
+		"browsingData"
 	]
 }

@@ -63,11 +63,23 @@ async function clear_private_cookies() {
 		hadListener = true;
 	}
 
-	await browser.browsingData.removeCookies({ 'cookieStoreId': cookie_store }).then(() => {
-		if (hadListener) {
-			browser.cookies.onChanged.addListener(save_cookies);
-		}
-	});
+	if (isFirefox) {
+		await browser.browsingData.removeCookies({ 'cookieStoreId': cookie_store }); // Firefox only
+	} else {
+		await browser.cookies.getAll({ 'storeId': cookie_store }).then(async (cookies) => {
+			for (let cookie of cookies) {
+				await browser.cookies.remove({
+					'storeId': cookie_store,
+					'url': (cookie['secure'] ? 'https://' : 'http://') + (cookie['domain'].charAt(0) == '.' ? cookie['domain'].substr(1) : cookie['domain']) + cookie['path'],
+					'name': cookie['name']
+				});
+			}
+		});
+	}
+
+	if (hadListener) {
+		browser.cookies.onChanged.addListener(save_cookies);
+	}
 }
 
 browser.runtime.onInstalled.addListener(() => {
