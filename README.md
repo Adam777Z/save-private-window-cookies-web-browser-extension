@@ -21,7 +21,8 @@ No data is collected.
 - **Clear recent browsing history, cookies, and related data** (Mozilla Firefox only, done differently for Chromium because of API differences): only used to clear all cookies in open private windows when using the **Delete stored cookies** button and on Restore, before restoring the saved cookies
 
 ## Screenshot
-![Screenshot (Firefox)](screenshots/firefox.png)
+![Screenshot of Options (Firefox)](screenshots/firefox.png)\
+Options (Firefox)
 
 ## Install
 - [Mozilla Firefox](https://addons.mozilla.org/en-US/firefox/addon/save-private-window-cookies/)
