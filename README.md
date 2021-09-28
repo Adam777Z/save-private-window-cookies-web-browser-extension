@@ -20,6 +20,9 @@ No data is collected.
 - **Download files and read and modify the browser's download history**: to backup the saved cookies and remove the backup file from Downloads
 - **Clear recent browsing history, cookies, and related data** (Mozilla Firefox only, done differently for Chromium because of API differences): only used to clear all cookies in open private windows when using the **Delete stored cookies** button and on Restore, before restoring the saved cookies
 
+## Screenshot
+![Screenshot (Firefox)](screenshots/firefox.png)
+
 ## Install
 - [Mozilla Firefox](https://addons.mozilla.org/en-US/firefox/addon/save-private-window-cookies/)
 - [Google Chrome](https://chrome.google.com/webstore/detail/save-private-window-cooki/ojefealibpfjmbmljkdnhgobfllfempa)
