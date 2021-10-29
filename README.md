@@ -30,4 +30,4 @@ Options (Mozilla Firefox)
 - [Microsoft Edge](https://microsoftedge.microsoft.com/addons/detail/save-private-window-cooki/okhnojkilenjjeoeejhkodmdfhojicei)
 
 ## Credits
-- Icon from [Bootstrap Icons](https://icons.getbootstrap.com/) v1.5.0 (box-arrow-in-down)
+- Icon from [Bootstrap Icons](https://icons.getbootstrap.com/) v1.5.0 ([box-arrow-in-down](https://icons.getbootstrap.com/icons/box-arrow-in-down/))
