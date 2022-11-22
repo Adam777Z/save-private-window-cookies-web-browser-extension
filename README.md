@@ -17,7 +17,7 @@ No data is collected.
 
 #### Permissions
 - **Access data for all websites**: to save and restore cookies in private windows for all websites
-- **Download files and read and modify the browser's download history**: to backup the saved cookies and remove the backup file from Downloads
+- **Download files and read and modify the browser's download history**: to backup the saved cookies
 - **Clear recent browsing history, cookies, and related data** (Mozilla Firefox only, done differently for Chromium because of API differences): only used to clear all cookies in open private windows when using the **Delete stored cookies** button and on Restore, before restoring the saved cookies
 
 ## Screenshot

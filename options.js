@@ -125,7 +125,6 @@ document.querySelector('#delete').addEventListener('click', () => {
 
 browser.downloads.onChanged.addListener((download) => {
 	if (download['id'] == downloadID && download['state'] && download['state']['current'] != 'in_progress') {
-		browser.downloads.erase({ 'id': download['id'] }); // Remove the backup file from Downloads
 		downloadID = undefined;
 
 		URL.revokeObjectURL(objectURL);
