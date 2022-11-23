@@ -19,7 +19,13 @@ async function is_private_window_open() {
 
 async function save_cookies(changeInfo) {
 	if (await is_private_window_open() && changeInfo.cookie['storeId'] == cookie_store) {
-		browser.cookies.getAll({ 'storeId': cookie_store }).then((cookies) => {
+		let details = { 'storeId': cookie_store };
+
+		if (isFirefox) {
+			details['partitionKey'] = {}; // Firefox only, return all cookies from partitioned and unpartitioned storage
+		}
+
+		browser.cookies.getAll(details).then((cookies) => {
 			browser.storage.local.set({ 'cookies': cookies });
 		});
 	}

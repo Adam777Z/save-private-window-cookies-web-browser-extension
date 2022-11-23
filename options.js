@@ -91,7 +91,13 @@ document.querySelector('#save').addEventListener('click', () => {
 	browser.windows.getAll().then((windowInfoArray) => {
 		for (let windowInfo of windowInfoArray) {
 			if (windowInfo['incognito']) {
-				browser.cookies.getAll({ 'storeId': background_page.cookie_store }).then((cookies) => {
+				let details = { 'storeId': background_page.cookie_store };
+
+				if (background_page.isFirefox) {
+					details['partitionKey'] = {}; // Firefox only, return all cookies from partitioned and unpartitioned storage
+				}
+
+				browser.cookies.getAll(details).then((cookies) => {
 					browser.storage.local.set({ 'cookies': cookies });
 
 					update_storage_space_used();
@@ -173,6 +179,10 @@ file_input.addEventListener('change', () => {
 				if (cookie['firstPartyDomain'] === undefined) {
 					cookie['firstPartyDomain'] = ''; // Firefox only
 				}
+
+				if (cookie['partitionKey'] === undefined) {
+					cookie['partitionKey'] = null; // Firefox only
+				}
 			} else {
 				// Chromium only, if sameSite=no_restriction then secure=true is required
 				if (!cookie['secure'] && cookie['sameSite'] == 'no_restriction') {
@@ -181,6 +191,10 @@ file_input.addEventListener('change', () => {
 
 				if (cookie['firstPartyDomain'] !== undefined) {
 					delete cookie['firstPartyDomain']; // Firefox only
+				}
+
+				if (cookie['partitionKey'] !== undefined) {
+					delete cookie['partitionKey']; // Firefox only
 				}
 			}
 		}
