@@ -1,39 +1,45 @@
 var file_input = document.querySelector('#file_input');
-var background_page, objectURL, downloadID;
+var private_enabled = false;
+var access_enabled = false;
+var private_window_open = false;
+var objectURL, downloadID;
 
-browser.runtime.getBackgroundPage().then((page) => {
-	background_page = page;
-});
+async function update_permissions() {
+	private_enabled = await chrome.extension.isAllowedIncognitoAccess();
+	access_enabled = await chrome.permissions.contains({ 'origins': [ '<all_urls>' ] });
+}
 
-function update_save_button() {
-	browser.storage.local.get('auto_save').then((res) => {
-		if (res['auto_save']) {
-			document.querySelector('#save').disabled = true;
-		} else {
-			browser.windows.getAll().then((windowInfoArray) => {
-				let private_window_open = false;
+async function update_private_window_open() {
+	private_window_open = false;
 
-				for (let windowInfo of windowInfoArray) {
-					if (windowInfo['incognito']) {
-						private_window_open = true;
-						break;
-					}
-				}
-
-				document.querySelector('#save').disabled = !private_window_open;
-			});
+	await chrome.windows.getAll().then((windowInfoArray) => {
+		for (let windowInfo of windowInfoArray) {
+			if (windowInfo['incognito']) {
+				private_window_open = true;
+				break;
+			}
 		}
 	});
 }
 
+async function update_save_button() {
+	await update_permissions();
+	await update_private_window_open();
+
+	let auto_save_enabled = await chrome.storage.local.get('auto_save').then(res => res['auto_save']);
+
+	document.querySelector('#save').disabled = (!private_enabled || !access_enabled || auto_save_enabled || !private_window_open);
+	document.querySelector('#auto_save').disabled = (!private_enabled || !access_enabled);
+}
+
 function update_storage_space_used() {
-	// browser.storage.local.getBytesInUse().then((bytesUsed) => {
+	// chrome.storage.local.getBytesInUse().then((bytesUsed) => {
 	// 	document.querySelector('#storage_space_used').textContent = parseFloat((bytesUsed / Math.pow(1024, 1)).toFixed(2));
 	// });
 
 	let bytesUsed = 0;
 
-	browser.storage.local.get('cookies').then((res) => {
+	chrome.storage.local.get('cookies').then((res) => {
 		if (res['cookies']) {
 			bytesUsed = new TextEncoder().encode(
 				Object.entries(res['cookies'])
@@ -48,26 +54,36 @@ function update_storage_space_used() {
 	});
 }
 
+async function update_warning() {
+	await update_permissions();
+
+	let warning_html = '';
+
+	if (!private_enabled && !access_enabled) {
+		warning_html = '<strong>Enable the extension in private windows and grant the <em>Access data for all websites</em> permission for this to work.</strong>';
+	} else if (!private_enabled) {
+		warning_html = '<strong>Enable the extension in private windows for this to work.</strong>';
+	} else if (!access_enabled) {
+		warning_html = '<strong>Grant the <em>Access data for all websites</em> permission for this to work.</strong>';
+	}
+
+	document.querySelector('#warning').innerHTML = warning_html;
+
+	update_save_button();
+}
+
 document.addEventListener('DOMContentLoaded', () => {
-	browser.storage.local.get({
+	chrome.storage.local.get({
 		'auto_save': false
 	}).then((res) => {
 		document.querySelector('#auto_save').checked = res['auto_save'];
 	});
 
-	update_save_button();
 	update_storage_space_used();
+	update_warning();
 });
 
-browser.extension.isAllowedIncognitoAccess().then((private) => {
-	if (!private) {
-		document.querySelector('#warning').style.display = 'block';
-		document.querySelector('#save').disabled = true;
-		document.querySelector('#auto_save').disabled = true;
-	}
-});
-
-browser.storage.onChanged.addListener((changes) => {
+chrome.storage.onChanged.addListener((changes) => {
 	if (changes['auto_save']) {
 		update_save_button();
 	} else if (changes['cookies']) {
@@ -75,30 +91,38 @@ browser.storage.onChanged.addListener((changes) => {
 	}
 });
 
-browser.windows.onCreated.addListener((window) => {
-	browser.extension.isAllowedIncognitoAccess().then((private) => {
+chrome.windows.onCreated.addListener((window) => {
+	chrome.extension.isAllowedIncognitoAccess().then((private) => {
 		if (private && window['incognito']) {
 			update_save_button();
 		}
 	});
 });
 
-browser.windows.onRemoved.addListener(() => {
+chrome.windows.onRemoved.addListener(() => {
 	update_save_button();
 });
 
+chrome.permissions.onAdded.addListener((permissions) => {
+	update_warning();
+});
+
+chrome.permissions.onRemoved.addListener((permissions) => {
+	update_warning();
+});
+
 document.querySelector('#save').addEventListener('click', () => {
-	browser.windows.getAll().then((windowInfoArray) => {
+	chrome.windows.getAll().then((windowInfoArray) => {
 		for (let windowInfo of windowInfoArray) {
 			if (windowInfo['incognito']) {
-				let details = { 'storeId': background_page.cookie_store };
+				let details = { 'storeId': cookie_store };
 
-				if (background_page.isFirefox) {
+				if (isFirefox) {
 					details['partitionKey'] = {}; // Firefox only, return all cookies from partitioned and unpartitioned storage
 				}
 
-				browser.cookies.getAll(details).then((cookies) => {
-					browser.storage.local.set({ 'cookies': cookies });
+				chrome.cookies.getAll(details).then((cookies) => {
+					chrome.storage.local.set({ 'cookies': cookies });
 
 					update_storage_space_used();
 				});
@@ -110,7 +134,7 @@ document.querySelector('#save').addEventListener('click', () => {
 });
 
 document.querySelector('#auto_save').addEventListener('change', (event) => {
-	browser.storage.local.set({
+	chrome.storage.local.set({
 		[event.target.id]: event.target.checked
 	});
 
@@ -120,16 +144,16 @@ document.querySelector('#auto_save').addEventListener('change', (event) => {
 });
 
 document.querySelector('#delete').addEventListener('click', () => {
-	browser.storage.local.remove('cookies').then(async () => {
+	chrome.storage.local.remove('cookies').then(async () => {
 		update_storage_space_used();
 
-		if (await background_page.is_private_window_open()) {
-			background_page.clear_private_cookies();
+		if (await is_private_window_open()) {
+			clear_private_cookies();
 		}
 	});
 });
 
-browser.downloads.onChanged.addListener((download) => {
+chrome.downloads.onChanged.addListener((download) => {
 	if (download['id'] == downloadID && download['state'] && download['state']['current'] != 'in_progress') {
 		downloadID = undefined;
 
@@ -139,11 +163,11 @@ browser.downloads.onChanged.addListener((download) => {
 });
 
 document.querySelector('#backup').addEventListener('click', () => {
-	browser.storage.local.get('cookies').then((res) => {
+	chrome.storage.local.get('cookies').then((res) => {
 		if (res['cookies']) {
 			objectURL = URL.createObjectURL(new Blob([JSON.stringify(res['cookies'])], { 'type': 'application/json' }));
 
-			browser.downloads.download({
+			chrome.downloads.download({
 				'url': objectURL,
 				'filename': 'cookies.json',
 				'saveAs': true
@@ -167,11 +191,11 @@ file_input.addEventListener('change', () => {
 		// Convert cookies if needed
 		for (let cookie of cookies) {
 			// Change cookie store if needed
-			if (cookie['storeId'] == (background_page.isFirefox ? '1' : 'firefox-private')) {
-				cookie['storeId'] = background_page.cookie_store;
+			if (cookie['storeId'] == (isFirefox ? '1' : 'firefox-private')) {
+				cookie['storeId'] = cookie_store;
 			}
 
-			if (background_page.isFirefox) {
+			if (isFirefox) {
 				if (cookie['sameSite'] == 'unspecified') { // Chromium only
 					cookie['sameSite'] = 'no_restriction';
 				}
@@ -199,12 +223,12 @@ file_input.addEventListener('change', () => {
 			}
 		}
 
-		browser.storage.local.set({ 'cookies': cookies });
+		chrome.storage.local.set({ 'cookies': cookies });
 		file_input.value = '';
 
-		if (await background_page.is_private_window_open()) {
-			await background_page.clear_private_cookies();
-			background_page.restore_cookies();
+		if (await is_private_window_open()) {
+			await clear_private_cookies();
+			restore_cookies();
 		}
 	});
 });

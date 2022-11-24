@@ -1,14 +1,14 @@
 {
-	"manifest_version": 2,
+	"manifest_version": 3,
 	"name": "Save private window cookies",
 	"description": "Save the cookies in private windows and restore them when a new private window is opened.",
-	"version": "1.1.0",
+	"version": "1.2.0",
 	"homepage_url": "https://github.com/Adam777Z/save-private-window-cookies-web-browser-extension",
 	"author": "Adam777",
 	"browser_specific_settings": {
 		"gecko": {
 			"id": "save-private-window-cookies@Adam777",
-			"strict_min_version": "57.0"
+			"strict_min_version": "101.0"
 		}
 	},
 	"icons": {
@@ -21,7 +21,6 @@
 	},
 	"background": {
 		"scripts": [
-			"browser-polyfill.min.js",
 			"background.js"
 		]
 	},
@@ -32,8 +31,10 @@
 	"permissions": [
 		"storage",
 		"cookies",
-		"<all_urls>",
 		"downloads",
 		"browsingData"
+	],
+	"host_permissions": [
+		"<all_urls>"
 	]
 }

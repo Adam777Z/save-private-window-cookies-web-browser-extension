@@ -5,7 +5,7 @@ var was_private_window_open = false;
 async function is_private_window_open() {
 	let private_window_open = false;
 
-	await browser.windows.getAll().then((windowInfoArray) => {
+	await chrome.windows.getAll().then((windowInfoArray) => {
 		for (let windowInfo of windowInfoArray) {
 			if (windowInfo['incognito']) {
 				private_window_open = true;
@@ -25,22 +25,22 @@ async function save_cookies(changeInfo) {
 			details['partitionKey'] = {}; // Firefox only, return all cookies from partitioned and unpartitioned storage
 		}
 
-		browser.cookies.getAll(details).then((cookies) => {
-			browser.storage.local.set({ 'cookies': cookies });
+		chrome.cookies.getAll(details).then((cookies) => {
+			chrome.storage.local.set({ 'cookies': cookies });
 		});
 	}
 }
 
 async function save_cookies_listener() {
 	if (await is_private_window_open()) {
-		browser.storage.local.get('auto_save').then((res) => {
+		chrome.storage.local.get('auto_save').then((res) => {
 			if (res['auto_save']) {
-				if (!browser.cookies.onChanged.hasListener(save_cookies)) {
-					browser.cookies.onChanged.addListener(save_cookies);
+				if (!chrome.cookies.onChanged.hasListener(save_cookies)) {
+					chrome.cookies.onChanged.addListener(save_cookies);
 				}
 			} else {
-				if (browser.cookies.onChanged.hasListener(save_cookies)) {
-					browser.cookies.onChanged.removeListener(save_cookies);
+				if (chrome.cookies.onChanged.hasListener(save_cookies)) {
+					chrome.cookies.onChanged.removeListener(save_cookies);
 				}
 			}
 		});
@@ -48,14 +48,14 @@ async function save_cookies_listener() {
 }
 
 function restore_cookies() {
-	browser.storage.local.get('cookies').then((res) => {
+	chrome.storage.local.get('cookies').then((res) => {
 		if (res['cookies']) {
 			for (let cookie of res['cookies']) {
 				cookie['url'] = (cookie['secure'] ? 'https://' : 'http://') + (cookie['domain'].charAt(0) == '.' ? cookie['domain'].substr(1) : cookie['domain']) + cookie['path']; // Required to set the cookie
 				delete cookie['hostOnly']; // Not supported
 				delete cookie['session']; // Not supported
 
-				browser.cookies.set(cookie);
+				chrome.cookies.set(cookie);
 			}
 		}
 	});
@@ -64,17 +64,17 @@ function restore_cookies() {
 async function clear_private_cookies() {
 	let hadListener = false;
 
-	if (browser.cookies.onChanged.hasListener(save_cookies)) {
-		browser.cookies.onChanged.removeListener(save_cookies);
+	if (chrome.cookies.onChanged.hasListener(save_cookies)) {
+		chrome.cookies.onChanged.removeListener(save_cookies);
 		hadListener = true;
 	}
 
 	if (isFirefox) {
-		await browser.browsingData.removeCookies({ 'cookieStoreId': cookie_store }); // Firefox only
+		await chrome.browsingData.removeCookies({ 'cookieStoreId': cookie_store }); // Firefox only
 	} else {
-		await browser.cookies.getAll({ 'storeId': cookie_store }).then(async (cookies) => {
+		await chrome.cookies.getAll({ 'storeId': cookie_store }).then(async (cookies) => {
 			for (let cookie of cookies) {
-				await browser.cookies.remove({
+				await chrome.cookies.remove({
 					'storeId': cookie_store,
 					'url': (cookie['secure'] ? 'https://' : 'http://') + (cookie['domain'].charAt(0) == '.' ? cookie['domain'].substr(1) : cookie['domain']) + cookie['path'],
 					'name': cookie['name']
@@ -84,26 +84,26 @@ async function clear_private_cookies() {
 	}
 
 	if (hadListener) {
-		browser.cookies.onChanged.addListener(save_cookies);
+		chrome.cookies.onChanged.addListener(save_cookies);
 	}
 }
 
-browser.runtime.onInstalled.addListener(() => {
-	browser.storage.local.get({
+chrome.runtime.onInstalled.addListener(() => {
+	chrome.storage.local.get({
 		'auto_save': false
 	}).then((options) => {
-		browser.storage.local.set(options);
+		chrome.storage.local.set(options);
 	});
 });
 
-browser.storage.onChanged.addListener((changes) => {
+chrome.storage.onChanged.addListener((changes) => {
 	if (changes['auto_save']) {
 		save_cookies_listener();
 	}
 });
 
-browser.windows.onCreated.addListener((window) => {
-	browser.extension.isAllowedIncognitoAccess().then((private) => {
+chrome.windows.onCreated.addListener((window) => {
+	chrome.extension.isAllowedIncognitoAccess().then((private) => {
 		if (private && window['incognito'] && !was_private_window_open) {
 			restore_cookies();
 			save_cookies_listener();
@@ -112,10 +112,10 @@ browser.windows.onCreated.addListener((window) => {
 	});
 });
 
-browser.windows.onRemoved.addListener(async () => {
+chrome.windows.onRemoved.addListener(async () => {
 	if (!await is_private_window_open()) {
-		if (browser.cookies.onChanged.hasListener(save_cookies)) {
-			browser.cookies.onChanged.removeListener(save_cookies);
+		if (chrome.cookies.onChanged.hasListener(save_cookies)) {
+			chrome.cookies.onChanged.removeListener(save_cookies);
 		}
 
 		was_private_window_open = false;
