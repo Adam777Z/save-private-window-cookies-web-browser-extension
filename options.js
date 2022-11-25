@@ -1,16 +1,10 @@
+var isFirefox = navigator.userAgent.indexOf('Firefox') !== -1;
+var cookie_store = isFirefox ? 'firefox-private' : '1';
 var file_input = document.querySelector('#file_input');
-var private_enabled = false;
-var access_enabled = false;
-var private_window_open = false;
 var objectURL, downloadID;
 
-async function update_permissions() {
-	private_enabled = await chrome.extension.isAllowedIncognitoAccess();
-	access_enabled = await chrome.permissions.contains({ 'origins': [ '<all_urls>' ] });
-}
-
-async function update_private_window_open() {
-	private_window_open = false;
+async function is_private_window_open() {
+	let private_window_open = false;
 
 	await chrome.windows.getAll().then((windowInfoArray) => {
 		for (let windowInfo of windowInfoArray) {
@@ -20,16 +14,92 @@ async function update_private_window_open() {
 			}
 		}
 	});
+
+	return private_window_open;
+}
+
+async function save_cookies(changeInfo) {
+	if (await is_private_window_open() && changeInfo.cookie['storeId'] == cookie_store) {
+		let details = { 'storeId': cookie_store };
+
+		if (isFirefox) {
+			details['partitionKey'] = {}; // Firefox only, return all cookies from partitioned and unpartitioned storage
+		}
+
+		chrome.cookies.getAll(details).then((cookies) => {
+			chrome.storage.local.set({ 'cookies': cookies });
+		});
+	}
+}
+
+function restore_cookies() {
+	chrome.storage.local.get('cookies').then((res) => {
+		if (res['cookies']) {
+			for (let cookie of res['cookies']) {
+				cookie['url'] = (cookie['secure'] ? 'https://' : 'http://') + (cookie['domain'].charAt(0) == '.' ? cookie['domain'].substr(1) : cookie['domain']) + cookie['path']; // Required to set the cookie
+				delete cookie['hostOnly']; // Not supported
+				delete cookie['session']; // Not supported
+
+				chrome.cookies.set(cookie);
+			}
+		}
+	});
+}
+
+async function clear_private_cookies() {
+	let hadListener = false;
+
+	if (chrome.cookies.onChanged.hasListener(save_cookies)) {
+		chrome.cookies.onChanged.removeListener(save_cookies);
+		hadListener = true;
+	}
+
+	if (isFirefox) {
+		await chrome.browsingData.removeCookies({ 'cookieStoreId': cookie_store }); // Firefox only
+	} else {
+		await chrome.cookies.getAll({ 'storeId': cookie_store }).then(async (cookies) => {
+			for (let cookie of cookies) {
+				await chrome.cookies.remove({
+					'storeId': cookie_store,
+					'url': (cookie['secure'] ? 'https://' : 'http://') + (cookie['domain'].charAt(0) == '.' ? cookie['domain'].substr(1) : cookie['domain']) + cookie['path'],
+					'name': cookie['name']
+				});
+			}
+		});
+	}
+
+	if (hadListener) {
+		chrome.cookies.onChanged.addListener(save_cookies);
+	}
+}
+
+async function update_warning() {
+	let private_enabled = await chrome.extension.isAllowedIncognitoAccess();
+	let access_enabled = await chrome.permissions.contains({ 'origins': [ '<all_urls>' ] });
+	let warning_html = '';
+
+	if (!private_enabled && !access_enabled) {
+		warning_html = '<strong>Enable the extension in private windows and grant the <em>Access data for all websites</em> permission for this to work.</strong>';
+	} else if (!private_enabled) {
+		warning_html = '<strong>Enable the extension in private windows for this to work.</strong>';
+	} else if (!access_enabled) {
+		warning_html = '<strong>Grant the <em>Access data for all websites</em> permission for this to work.</strong>';
+	}
+
+	document.querySelector('#warning').innerHTML = warning_html;
+
+	update_save_button();
+
+	document.querySelector('#auto_save').disabled = (!private_enabled || !access_enabled);
 }
 
 async function update_save_button() {
-	await update_permissions();
-	await update_private_window_open();
-
+	let private_enabled = await chrome.extension.isAllowedIncognitoAccess();
+	let access_enabled = await chrome.permissions.contains({ 'origins': [ '<all_urls>' ] });
 	let auto_save_enabled = await chrome.storage.local.get('auto_save').then(res => res['auto_save']);
+	let private_window_open = await is_private_window_open();
 
 	document.querySelector('#save').disabled = (!private_enabled || !access_enabled || auto_save_enabled || !private_window_open);
-	document.querySelector('#auto_save').disabled = (!private_enabled || !access_enabled);
 }
 
 function update_storage_space_used() {
@@ -54,24 +124,6 @@ function update_storage_space_used() {
 	});
 }
 
-async function update_warning() {
-	await update_permissions();
-
-	let warning_html = '';
-
-	if (!private_enabled && !access_enabled) {
-		warning_html = '<strong>Enable the extension in private windows and grant the <em>Access data for all websites</em> permission for this to work.</strong>';
-	} else if (!private_enabled) {
-		warning_html = '<strong>Enable the extension in private windows for this to work.</strong>';
-	} else if (!access_enabled) {
-		warning_html = '<strong>Grant the <em>Access data for all websites</em> permission for this to work.</strong>';
-	}
-
-	document.querySelector('#warning').innerHTML = warning_html;
-
-	update_save_button();
-}
-
 document.addEventListener('DOMContentLoaded', () => {
 	chrome.storage.local.get({
 		'auto_save': false
@@ -79,8 +131,8 @@ document.addEventListener('DOMContentLoaded', () => {
 		document.querySelector('#auto_save').checked = res['auto_save'];
 	});
 
-	update_storage_space_used();
 	update_warning();
+	update_storage_space_used();
 });
 
 chrome.storage.onChanged.addListener((changes) => {
@@ -103,11 +155,11 @@ chrome.windows.onRemoved.addListener(() => {
 	update_save_button();
 });
 
-chrome.permissions.onAdded.addListener((permissions) => {
+chrome.permissions.onAdded.addListener(() => {
 	update_warning();
 });
 
-chrome.permissions.onRemoved.addListener((permissions) => {
+chrome.permissions.onRemoved.addListener(() => {
 	update_warning();
 });
 
