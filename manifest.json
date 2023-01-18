@@ -8,7 +8,7 @@
 	"browser_specific_settings": {
 		"gecko": {
 			"id": "save-private-window-cookies@Adam777",
-			"strict_min_version": "101.0"
+			"strict_min_version": "109.0"
 		}
 	},
 	"icons": {
