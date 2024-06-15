@@ -24,6 +24,7 @@ async function save_cookies(changeInfo) {
 
 		if (isFirefox) {
 			details['partitionKey'] = {}; // Firefox only, return all cookies from partitioned and unpartitioned storage
+			details['firstPartyDomain'] = null; // Required when First-Party Isolation is enabled
 		}
 
 		chrome.cookies.getAll(details).then((cookies) => {
@@ -171,6 +172,7 @@ document.querySelector('#save').addEventListener('click', () => {
 
 				if (isFirefox) {
 					details['partitionKey'] = {}; // Firefox only, return all cookies from partitioned and unpartitioned storage
+					details['firstPartyDomain'] = null; // Required when First-Party Isolation is enabled
 				}
 
 				chrome.cookies.getAll(details).then((cookies) => {
