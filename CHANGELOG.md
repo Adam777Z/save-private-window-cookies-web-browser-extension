@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.3.0] - 2024-07-27
+- Manifest updated
+- Updated for Firefox first-party isolation
+- Options Dark Mode support
+
 ## [1.2.0] - 2023-01-18
 - The backup file is no longer removed from the web browser's download history
 - Updated for Firefox storage partitions
@@ -13,6 +18,7 @@
 ## [1.0.0] - 2021-09-07
 - First release
 
+[1.3.0]: https://github.com/Adam777Z/save-private-window-cookies-web-browser-extension/releases/tag/1.3.0
 [1.2.0]: https://github.com/Adam777Z/save-private-window-cookies-web-browser-extension/releases/tag/1.2.0
 [1.1.0]: https://github.com/Adam777Z/save-private-window-cookies-web-browser-extension/releases/tag/1.1.0
 [1.0.0]: https://github.com/Adam777Z/save-private-window-cookies-web-browser-extension/releases/tag/1.0.0
