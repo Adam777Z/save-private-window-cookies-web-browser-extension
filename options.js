@@ -23,7 +23,9 @@ async function save_cookies(changeInfo) {
 		let details = { 'storeId': cookie_store };
 
 		if (isFirefox) {
-			details['partitionKey'] = {}; // Firefox only, return all cookies from partitioned and unpartitioned storage
+			// Firefox only
+			details['firstPartyDomain'] = null; // First-party isolation, return all cookies
+			details['partitionKey'] = {}; // Return all cookies from partitioned and unpartitioned storage
 		}
 
 		chrome.cookies.getAll(details).then((cookies) => {
@@ -170,7 +172,9 @@ document.querySelector('#save').addEventListener('click', () => {
 				let details = { 'storeId': cookie_store };
 
 				if (isFirefox) {
-					details['partitionKey'] = {}; // Firefox only, return all cookies from partitioned and unpartitioned storage
+					// Firefox only
+					details['firstPartyDomain'] = null; // First-party isolation, return all cookies
+					details['partitionKey'] = {}; // Return all cookies from partitioned and unpartitioned storage
 				}
 
 				chrome.cookies.getAll(details).then((cookies) => {
