@@ -63,6 +63,71 @@ function restore_cookies() {
 	});
 }
 
+async function save_local_storage(origin, values) {
+	let saved = await chrome.storage.local.get('local_storage').then((res) => res['local_storage'] || {});
+	saved[origin] = values;
+	await chrome.storage.local.set({ 'local_storage': saved });
+}
+
+async function save_private_local_storage() {
+	let windows = await chrome.windows.getAll({ 'populate': true });
+
+	for (let windowInfo of windows) {
+		if (windowInfo['incognito']) {
+			for (let tab of windowInfo['tabs']) {
+				let snapshot = await chrome.tabs.sendMessage(tab['id'], { 'action': 'get-local-storage' }).catch(() => null);
+
+				if (snapshot && snapshot['origin']) {
+					await save_local_storage(snapshot['origin'], snapshot['values']);
+				}
+			}
+		}
+	}
+}
+
+chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
+	if (message['action'] == 'save-local-storage') {
+		save_private_local_storage().then(() => sendResponse());
+		return true;
+	}
+
+	if (message['action'] == 'clear-local-storage') {
+		chrome.windows.getAll({ 'populate': true }).then(async (windows) => {
+			for (let windowInfo of windows) {
+				if (windowInfo['incognito']) {
+					for (let tab of windowInfo['tabs']) {
+						await chrome.tabs.sendMessage(tab['id'], { 'action': 'clear-local-storage' }).catch(() => {});
+					}
+				}
+			}
+
+			await chrome.storage.local.remove('local_storage');
+			sendResponse();
+		});
+		return true;
+	}
+
+	if (message['action'] == 'restore-local-storage') {
+		chrome.windows.getAll({ 'populate': true }).then(async (windows) => {
+			for (let windowInfo of windows) {
+				if (windowInfo['incognito']) {
+					for (let tab of windowInfo['tabs']) {
+						await chrome.tabs.sendMessage(tab['id'], { 'action': 'restore-local-storage' }).catch(() => {});
+					}
+				}
+			}
+
+			sendResponse();
+		});
+		return true;
+	}
+
+	if (message['action'] == 'store-local-storage' && sender.tab && sender.tab['incognito']) {
+		save_local_storage(message['origin'], message['values']).then(() => sendResponse());
+		return true;
+	}
+});
+
 chrome.runtime.onInstalled.addListener(() => {
 	chrome.storage.local.get({
 		'auto_save': false

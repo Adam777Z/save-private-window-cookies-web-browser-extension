@@ -111,12 +111,11 @@ function update_storage_space_used() {
 
 	let bytesUsed = 0;
 
-	chrome.storage.local.get('cookies').then((res) => {
-		if (res['cookies']) {
+	chrome.storage.local.get([ 'cookies', 'local_storage' ]).then((res) => {
+		let data = { 'cookies': res['cookies'] || [], 'local_storage': res['local_storage'] || {} };
+		if (data['cookies'].length || Object.keys(data['local_storage']).length) {
 			bytesUsed = new TextEncoder().encode(
-				Object.entries(res['cookies'])
-					.map(([key, value]) => key + JSON.stringify(value))
-					.join('')
+				JSON.stringify(data)
 			).length;
 		}
 
@@ -140,7 +139,9 @@ document.addEventListener('DOMContentLoaded', () => {
 chrome.storage.onChanged.addListener((changes) => {
 	if (changes['auto_save']) {
 		update_save_button();
-	} else if (changes['cookies']) {
+	}
+
+	if (changes['cookies'] || changes['local_storage']) {
 		update_storage_space_used();
 	}
 });
@@ -183,6 +184,8 @@ document.querySelector('#save').addEventListener('click', () => {
 					update_storage_space_used();
 				});
 
+				chrome.runtime.sendMessage({ 'action': 'save-local-storage' }).catch(() => {});
+
 				break;
 			}
 		}
@@ -200,11 +203,12 @@ document.querySelector('#auto_save').addEventListener('change', (event) => {
 });
 
 document.querySelector('#delete').addEventListener('click', () => {
-	chrome.storage.local.remove('cookies').then(async () => {
+	chrome.storage.local.remove([ 'cookies', 'local_storage' ]).then(async () => {
 		update_storage_space_used();
 
 		if (await is_private_window_open()) {
-			clear_private_cookies();
+			await clear_private_cookies();
+			await chrome.runtime.sendMessage({ 'action': 'clear-local-storage' }).catch(() => {});
 		}
 	});
 });
@@ -219,13 +223,14 @@ chrome.downloads.onChanged.addListener((download) => {
 });
 
 document.querySelector('#backup').addEventListener('click', () => {
-	chrome.storage.local.get('cookies').then((res) => {
-		if (res['cookies']) {
-			objectURL = URL.createObjectURL(new Blob([JSON.stringify(res['cookies'])], { 'type': 'application/json' }));
+	chrome.storage.local.get([ 'cookies', 'local_storage' ]).then((res) => {
+		if (res['cookies'] || res['local_storage']) {
+			let backup = { 'cookies': res['cookies'] || [], 'local_storage': res['local_storage'] || {} };
+			objectURL = URL.createObjectURL(new Blob([JSON.stringify(backup)], { 'type': 'application/json' }));
 
 			chrome.downloads.download({
 				'url': objectURL,
-				'filename': 'cookies.json',
+				'filename': 'website-data.json',
 				'saveAs': true
 			}).then((id) => {
 				downloadID = id;
@@ -242,7 +247,9 @@ file_input.addEventListener('change', () => {
 	}
 
 	new Blob([file], { 'type': 'application/json' }).text().then(async (text) => {
-		let cookies = JSON.parse(text);
+		let backup = JSON.parse(text);
+		let cookies = Array.isArray(backup) ? backup : backup['cookies'] || [];
+		let local_storage = Array.isArray(backup) ? undefined : backup['local_storage'];
 
 		// Convert cookies if needed
 		for (let cookie of cookies) {
@@ -279,12 +286,19 @@ file_input.addEventListener('change', () => {
 			}
 		}
 
-		chrome.storage.local.set({ 'cookies': cookies });
+		let stored = { 'cookies': cookies };
+		if (local_storage) {
+			stored['local_storage'] = local_storage;
+		}
+		await chrome.storage.local.set(stored);
 		file_input.value = '';
 
 		if (await is_private_window_open()) {
 			await clear_private_cookies();
 			restore_cookies();
+			if (local_storage) {
+				chrome.runtime.sendMessage({ 'action': 'restore-local-storage' }).catch(() => {});
+			}
 		}
 	});
 });

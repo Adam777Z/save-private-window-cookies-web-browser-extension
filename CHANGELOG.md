@@ -1,5 +1,8 @@
 # Changelog
 
+## [1.4.0] - 2026-11-19
+- Added Local Storage support (the page must be open to save its data)
+
 ## [1.3.0] - 2024-07-27
 - Manifest updated
 - Updated for Firefox first-party isolation
@@ -18,6 +21,7 @@
 ## [1.0.0] - 2021-09-07
 - First release
 
+[1.4.0]: https://github.com/Adam777Z/save-private-window-cookies-web-browser-extension/releases/tag/1.4.0
 [1.3.0]: https://github.com/Adam777Z/save-private-window-cookies-web-browser-extension/releases/tag/1.3.0
 [1.2.0]: https://github.com/Adam777Z/save-private-window-cookies-web-browser-extension/releases/tag/1.2.0
 [1.1.0]: https://github.com/Adam777Z/save-private-window-cookies-web-browser-extension/releases/tag/1.1.0
