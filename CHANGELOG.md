@@ -2,7 +2,7 @@
 
 ## [1.4.1] - 2026-11-19
 - Added Local Storage support (the page must be open to save its data)
-- Manifest updated
+- Firefox manifest updated
 
 ## [1.3.0] - 2024-07-27
 - Manifest updated
